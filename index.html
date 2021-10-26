@@ -35,17 +35,16 @@
 
     var player
     var cursors
-    //var laser
-
     var lasers
     var enemies
+
     var lastFired = 0
-
     var lives = 3
-    var timedEvent
-
     var score = 0
+
+    var livesText
     var scoreText
+    var gameOverText
     
     var game = new Phaser.Game(config)
 
@@ -66,32 +65,12 @@
         cursors = this.input.keyboard.createCursorKeys()
 
         enemies = this.physics.add.group()
-        var x = Phaser.Math.Between(200, 1000)
-        var enemy = enemies.create(x, 0, 'Enemy').setScale(0.5)        
-        enemy.setVelocityY(300)
 
         scoreText = this.add.text(20, 20, 'SCORE : ' + score, {fontFamily: 'Arial', fontSize: '30px', fontStyle: 'bold', color: 'white'})
-        //new Text(game, 100, 100, "SCORE", {fontFamily: 'Arial'})
+        livesText = this.add.text(20, 50, 'LIVES : ' + lives, {fontFamily: 'Arial', fontSize: '30px', fontStyle: 'bold', color: 'red'})
+        gameOverText = this.add.text(640, 360, '', {fontFamily: 'Arial', fontSize: '40px', fontStyle: 'bold', color: 'red'})
 
-
-        timedEvent = this.time.addEvent({ delay: 5000, callback: spawnEnemy, callbackScope: this, loop: true })
-    }
-
-    function enemyHit()
-    {
-        enemies.setActive(false)
-        enemies.setVisible(false)
-        //this.physics.world.removeCollider(enemies)
-
-        score += 1
-        scoreText.setText("SCORE : " + score)
-
-        // lives -= 1
-
-        // if (lives < 1)
-        // {
-        //     this.physics.pause()
-        // }
+        this.time.addEvent({ delay: 5000, callback: spawnEnemy, callbackScope: this, loop: true })
     }
 
     function spawnEnemy()
@@ -101,17 +80,35 @@
         var enemy = enemies.create(x, 0, 'Enemy').setScale(0.5)  
         enemy.setVelocityY(300)
 
-        //this.physics.add.collider(player, enemy)
         this.physics.add.overlap(player, enemy, enemyHit, null, this)
     }
 
-    function enemyShot()
+    function enemyHit(player, enemy)
     {
         enemies.setActive(false)
         enemies.setVisible(false)
-        //this.physics.world.removeCollider(enemies)
+        enemy.disableBody(true, true)
 
-        score += 1
+        score += 10
+        scoreText.setText("SCORE : " + score)
+
+        lives -= 1
+        livesText.setText("LIVES : " + lives)
+
+        if (lives < 1)
+        {
+            gameOverText.setText("GAME OVER")
+            this.physics.pause()
+        }
+    }
+
+    function enemyShot(enemies, lasers)
+    {
+        enemies.setActive(false)
+        enemies.setVisible(false)
+        enemies.disableBody(true, true)
+
+        score += 10
         scoreText.setText("SCORE : " + score)
     }
 
@@ -122,7 +119,6 @@
         laser = lasers.create(player.x, player.y, 'Laser').setScale(0.3)
         laser.setVelocityY(-300)
 
-        //this.physics.add.collider(enemies, laser)
         this.physics.add.overlap(enemies, lasers, enemyShot, null, this)
     }
 
