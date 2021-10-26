@@ -61,28 +61,19 @@
         player.setCollideWorldBounds(true)
 
         cursors = this.input.keyboard.createCursorKeys()
-        //spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-
-        //lasers = this.physics.add.group()    
 
         enemies = this.physics.add.group()
         var x = Phaser.Math.Between(200, 1000)
         var enemy = enemies.create(x, 0, 'Enemy').setScale(0.5)        
         enemy.setVelocityY(300)
 
-        //this.physics.add.overlap(player, enemies, enemyHit, null, this)
-        
-        //this.physics.add.overlap(lasers, enemies, enemyShot, null, this)
-
         timedEvent = this.time.addEvent({ delay: 5000, callback: spawnEnemy, callbackScope: this, loop: true })
     }
 
     function enemyHit()
     {
-        //enemies.kill()
         enemies.setActive(false)
         enemies.setVisible(false)
-
 
         // lives -= 1
 
@@ -100,15 +91,24 @@
         enemy.setVelocityY(300)
 
         this.physics.add.overlap(player, enemy, enemyHit, null, this)
-        this.physics.add.overlap(laser, enemy, enemyShot, null, this)
     }
 
     function enemyShot()
     {
         enemies.setActive(false)
         enemies.setVisible(false)
-        lasers.setActive(false)
-        lasers.setVisible(false)
+        laser.setVisible(false)
+        laser.setVisible(false)
+    }
+
+    function shootLaser()
+    {
+        lasers = this.physics.add.group()    
+
+        laser = lasers.create(player.x, player.y, 'Laser').setScale(0.3)
+        laser.setVelocityY(-300)
+
+        this.physics.add.overlap(enemies, lasers, enemyShot, null, this)
     }
 
     function update(time, delta)
@@ -128,18 +128,9 @@
 
         if (cursors.up.isDown && time > lastFired)
         {
-            lasers = this.physics.add.group()    
-
-            laser = lasers.create(player.x, player.y, 'Laser').setScale(0.3)
-            laser.setVelocityY(-300)
+            this.time.addEvent({ delay: 10, callback: shootLaser, callbackScope: this, loop: false })
 
             lastFired = time + 200
-
-            // if (laser.y < 100)
-            // {
-            //     laser.setActive(false)
-            //     laser.setVisible(false)
-            // }
         }
     }
 
