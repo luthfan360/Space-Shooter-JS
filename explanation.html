@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Shooter JS</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <style>
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script>
+
+    //Game Configuration
+    //Tipe game, ukuran, dan function yang digunakan
+    //Tipe physics yang digunakan
+    var config = {
+        type: Phaser.AUTO,
+        width: 1280,
+        height: 720,
+        scene: {
+            preload: preload,
+            create: create,
+            update: update
+        },
+        physics: {
+            default: 'arcade',
+            arcade: {
+                debug: false
+            }
+        }
+    }
+
+    //Variables
+    //Membuat variables untuk digunakan dalam game
+    //Game Object Variables (Individual/Group)
+    var player
+    var cursors
+    var lasers
+    var enemies
+
+    //Variable mechanics
+    //Yang menentukan berjalannya game
+    var lastFired = 0 //membatasi penggunaan weapon/laser
+    var lives = 3
+    var score = 0
+
+    //UI Variables
+    //Untuk menyimpan variable UI
+    var livesText
+    var scoreText
+    var gameOverText
+
+    //Event Variable
+    //Biasanya digunakan untuk menyimpan event 
+    //function call loop dengan interval tertentu
+    var timedEvent
+    
+    //Game Variable
+    //Semua informasi tentang game ini ada di dalam var game
+    //Membuat sebuah game dari config atau setting yang sudah ada
+    var game = new Phaser.Game(config)
+
+    //Preload
+    //Biasanya digunakan untuk menyiapkan assets yang diperlukan oleh game
+    function preload() 
+    {
+        this.load.image('Player', 'assets/Player.png')
+        this.load.image('Enemy', 'assets/Enemy.png')
+        this.load.image('Laser', 'assets/Laser.png')
+        this.load.image('Background', 'assets/SpaceBG.png')
+    }
+
+    //Create
+    //Memasukan (tampilkan) assets yang sudah disiapkan ke dalam game
+    //Set up untuk control
+    //Set object untuk menjadi group
+    function create()
+    {       
+        //Masukan gambar yang sudah di preload, di posisi tertentu, dengan ukuran tertentu
+        //(posisi X, posisi Y, nama asset/sprite).set Ukuran gambar/sprite (67% ukuran asli)
+        this.add.image(640, 360, 'Background').setScale(0.67)
+        //mengisi variable game-object dengan sebuah sprite, sekaligus membuatnya sebuah physics object
+        player = this.physics.add.sprite(640, 600, 'Player').setScale(0.3)
+        //membuat sebuah object (player) agar tidak keluar dari batas/frame game
+        player.setCollideWorldBounds(true)
+
+        //membuat system input menggunakan cursors
+        //cursors = menggabungkan 2 buah pergerakan sekaligus (kanan + atas = bergerak miring ke arah kanan atas)
+        //bisa juga tombol cursors digunakan untuk fungsi lain (biasanya lebih mudah)
+        cursors = this.input.keyboard.createCursorKeys()
+
+        //mengelompokkan enemy yang akan muncul ke dalam sebuah group bernama enemies
+        enemies = this.physics.add.group()
+
+        //membuat sebuah UI Text (posisi x, posisi y, "text", {styling/format})
+        //setOrigin, mengubah titik awal sebuah object
+        //setOrigin 0 = ada di pojok kiri atas, 1 = ada di pojok kanan bawah, 0.5 = ada di tengah object
+        scoreText = this.add.text(20, 20, 'SCORE : ' + score, {fontFamily: 'Arial', fontSize: '30px', fontStyle: 'bold', color: 'white'})
+        livesText = this.add.text(20, 50, 'LIVES : ' + lives, {fontFamily: 'Arial', fontSize: '30px', fontStyle: 'bold', color: 'red'})
+        gameOverText = this.add.text(640, 360, '', {fontFamily: 'Arial', fontSize: '40px', fontStyle: 'bold', color: 'red'}).setOrigin(0.5)
+
+        //add Event = menjalankan suatu function setiap beberapa waktu sekali
+        //(delay = berapa milisecond setiap event, callback = event/function apa yang inging di call)
+        //(callbackScope = ada dimana function nya, loop = event diulang terus atau tidak)
+        timedEvent = this.time.addEvent({ delay: 5000, callback: spawnEnemy, callbackScope: this, loop: true })
+    }
+
+    //function custom yang kita buat untuk mengeluarkan enemy
+    function spawnEnemy()
+    { 
+        //mengelompokan enemy yang akan dikeluarkan menjadi 1 group
+        enemies = this.physics.add.group()
+        //membuat posisi random/acak untuk keluarnya enemy
+        var x = Phaser.Math.Between(200, 1000)
+        //membuat enemy, dimana munculnya, dan menggunakan sprite apa
+        var enemy = enemies.create(x, 0, 'Enemy').setScale(0.5)  
+        //mementukan kecepatan bergerak suatu object (velocity X / velocity Y)
+        enemy.setVelocityY(300)
+
+        //menambahkan sebuah overlap
+        //overlap = jika 2 object bersentuhan, apa yang akan terjadi
+        //(object 1, object 2, function yang dipanggil jika terjadi sentuhan, null, this)
+        this.physics.add.overlap(player, enemy, enemyHit, null, this)
+    }
+
+    //function yang di call pada saat terjadi overlap antara player dan enemy
+    function enemyHit(player, enemy)
+    {
+        //membuat enemy disabled/non-active
+        enemies.setActive(false)
+        //membuat enemy tidak terlihat / hidden
+        enemies.setVisible(false)
+        //membuat body dari enemy tidak terdeteksi lagi
+        //agar tidak ada overlap lebih dari 1x
+        enemy.disableBody(true, true)
+
+        //menambahkan score
+        score += 10
+        //update score text UI agar menampilkan score terbaru
+        scoreText.setText("SCORE : " + score)
+
+        //mengurangi lives player saat bertabrakan dengan enemy
+        lives -= 1
+        //update lives text UI agar menampilkan nilai lives terbaru
+        livesText.setText("LIVES : " + lives)
+
+        //game over logic : apa yang terjadi pada saat lives < 1
+        if (lives < 1)
+        {
+            //ganti isi text dari game over text dari kosong menjadi 'Game Over'
+            gameOverText.setText("GAME OVER")
+            //pause physics - semua pergerakan object akan berghenti
+            this.physics.pause()
+            //menghapus timed event (enemy baru tidak akan muncul)
+            timedEvent.remove(false)
+        }
+    }
+
+    //function yang akan di call pada saat laser bersentuhan dengan enemy
+    function enemyShot(enemies, lasers)
+    {
+        //mekanisme mirip dengan enemyHit function
+        enemies.setActive(false)
+        enemies.setVisible(false)
+        enemies.disableBody(true, true)
+
+        score += 10
+        scoreText.setText("SCORE : " + score)
+    }
+
+    //function yang di call pada saat kita ingin menembak laser
+    //di function update, function ini di call pada saat tombol up arrow ditekan
+    function shootLaser()
+    {
+        //semua object laser dimasukan kedalam sebuah group lasers
+        lasers = this.physics.add.group()    
+
+        //create atau munculkan laser
+        laser = lasers.create(player.x, player.y, 'Laser').setScale(0.3)
+        //menentukan kecepatan object
+        laser.setVelocityY(-300)
+
+        //membuat overlap, function enemyShot akan dipanggil pada saat enemies dan lasers bertemu
+        this.physics.add.overlap(enemies, lasers, enemyShot, null, this)
+    }
+
+    //function ini dijalankan terus-menerus selama game berjalan
+    //time dan delta digunakan untuk hal2 yang berkaitan dengan perhitungan waktu
+    function update(time, delta)
+    {
+        //jika tombol cursor kiri ditekan
+        if (cursors.left.isDown)
+        {
+            //player bergerak ke kiri (setVelocityX(-300))
+            player.setVelocityX(-300)
+        }
+        //jika tombol cursor kiri ditekan
+        else if (cursors.right.isDown)
+        {
+            //player bergerak ke kanan (setVelocityX(-300))
+            player.setVelocityX(300)
+        }
+        //jika tidak ada tombol cursor yang ditekan
+        else
+        {
+            //player akan diam (setVelocityX(0))
+            player.setVelocityX(0)
+        }
+
+        //jika tombol cursor up ditekan & waktu berjalan > lastFired
+        if (cursors.up.isDown && time > lastFired)
+        {
+            //membuat sebuah event --> menjalankan function shootLaser 1x (loop: false)
+            this.time.addEvent({ delay: 10, callback: shootLaser, callbackScope: this, loop: false })
+
+            //membatasi seberapa sering kita bisa menembak laser
+            //harus ada jeda 200ms antara setiap tembakan
+            lastFired = time + 200
+        }
+    }
+
+</script>
+    
+</body>
+</html>

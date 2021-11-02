@@ -45,6 +45,8 @@
     var livesText
     var scoreText
     var gameOverText
+
+    var timedEvent
     
     var game = new Phaser.Game(config)
 
@@ -68,9 +70,9 @@
 
         scoreText = this.add.text(20, 20, 'SCORE : ' + score, {fontFamily: 'Arial', fontSize: '30px', fontStyle: 'bold', color: 'white'})
         livesText = this.add.text(20, 50, 'LIVES : ' + lives, {fontFamily: 'Arial', fontSize: '30px', fontStyle: 'bold', color: 'red'})
-        gameOverText = this.add.text(640, 360, '', {fontFamily: 'Arial', fontSize: '40px', fontStyle: 'bold', color: 'red'})
+        gameOverText = this.add.text(640, 360, '', {fontFamily: 'Arial', fontSize: '40px', fontStyle: 'bold', color: 'red'}).setOrigin(0.5)
 
-        this.time.addEvent({ delay: 5000, callback: spawnEnemy, callbackScope: this, loop: true })
+        timedEvent = this.time.addEvent({ delay: 5000, callback: spawnEnemy, callbackScope: this, loop: true })
     }
 
     function spawnEnemy()
@@ -99,6 +101,7 @@
         {
             gameOverText.setText("GAME OVER")
             this.physics.pause()
+            timedEvent.remove(false)
         }
     }
 
